@@ -1,8 +1,14 @@
-[workspace.lints.rust]
-unsafe_code = "forbid"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[workspace]
-resolver = "2"
-members = [
-    "day01",
-]
+[package]
+name = "adventofcode"
+version = "0.1.0"
+edition = "2021"
+authors = ["Sheldon Young <sheldon@softdev.ca>"]
+license = "MIT"
+description = "Solutions to the Advent of Code 2023"
+
+# Prevent accidentally publishing to crates.io
+publish = false
+
+[dependencies]
