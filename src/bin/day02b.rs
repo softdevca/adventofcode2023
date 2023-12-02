@@ -13,8 +13,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 #[derive(Debug)]
 struct Game {
-    id: u32,
     counts: Vec<CubeCount>,
+}
+
+impl Game {
+    fn min_cubes(&self) -> CubeCount {
+        self.counts
+            .iter()
+            .fold(CubeCount::default(), |acc, count| acc.max(count))
+    }
 }
 
 #[repr(u8)]
@@ -35,32 +42,36 @@ impl Cube {
     }
 }
 
-#[derive(Clone, Debug, Default)]
-struct CubeCount {
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct CubeCount {
     /// The discriminants of Cube are the indexes into the array.
     count: [u32; 3],
 }
 
 impl CubeCount {
-    fn new(red: u32, green: u32, blue: u32) -> Self {
+    pub fn new(red: u32, green: u32, blue: u32) -> Self {
         Self::default()
             .increment(Cube::Red, red)
             .increment(Cube::Green, green)
             .increment(Cube::Blue, blue)
     }
 
-    /// All counts must be less than or equal to the counts in the other.
-    fn none_greater_than(&self, other: &Self) -> bool {
-        self.count
-            .iter()
-            .zip(other.count.iter())
-            .all(|(a, b)| a <= b)
-    }
-
     fn increment(&self, cube: Cube, amount: u32) -> Self {
         let mut cube_count = self.clone();
         cube_count.count[cube as usize] += amount;
         cube_count
+    }
+
+    fn max(&self, other: &CubeCount) -> Self {
+        let mut count = [0_u32; 3];
+        for (i, this_count) in self.count.into_iter().enumerate() {
+            count[i] = this_count.max(other.count[i]);
+        }
+        Self { count }
+    }
+
+    fn product(&self) -> u32 {
+        self.count.iter().product()
     }
 }
 
@@ -73,7 +84,6 @@ fn parse(lines: Lines) -> Result<Vec<Game>, Box<dyn Error>> {
         if !game_part.starts_with("Game ") {
             return Err(IoError::other("line did not start with 'Game'").into());
         }
-        let game_id: u32 = game_part["Game ".len()..].parse()?;
 
         // Counts
         let mut cube_counts = Vec::new();
@@ -93,7 +103,6 @@ fn parse(lines: Lines) -> Result<Vec<Game>, Box<dyn Error>> {
         }
 
         Ok(Game {
-            id: game_id,
             counts: cube_counts,
         })
     }
@@ -105,14 +114,8 @@ fn parse(lines: Lines) -> Result<Vec<Game>, Box<dyn Error>> {
 }
 
 pub(crate) fn total(lines: Lines) -> Result<u32, Box<dyn Error>> {
-    let bag = CubeCount::new(12, 13, 14);
     let games = parse(lines)?;
-    let games = games.iter().filter(|game| {
-        game.counts
-            .iter()
-            .all(|count| count.none_greater_than(&bag))
-    });
-    let total = games.map(|game| game.id).sum();
+    let total = games.iter().map(|game| game.min_cubes().product()).sum();
     Ok(total)
 }
 
@@ -127,33 +130,26 @@ mod tests {
             Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green";
 
     #[test]
-    fn parse_example() {
+    fn example_min_cubes() {
         let games = parse(EXAMPLE.lines()).expect("example");
-        assert_eq!(games.len(), 5);
-        let game1 = games.first().unwrap();
-        assert_eq!(game1.id, 1);
-        assert_eq!(game1.counts.len(), 3);
-        assert_eq!(game1.counts[0].count, [4, 0, 3]);
-        assert_eq!(game1.counts[1].count, [1, 2, 6]);
-        assert_eq!(game1.counts[2].count, [0, 2, 0]);
-        let game5 = games.get(4).unwrap();
-        assert_eq!(game5.id, 5);
-        assert_eq!(game5.counts.len(), 2);
-        assert_eq!(game5.counts[0].count, [6, 3, 1]);
-        assert_eq!(game5.counts[1].count, [1, 2, 2]);
+        let min_cubes: Vec<CubeCount> = games.iter().map(|game| game.min_cubes()).collect();
+        assert_eq!(min_cubes[0], CubeCount::new(4, 2, 6));
+        assert_eq!(min_cubes[1], CubeCount::new(1, 3, 4));
+        assert_eq!(min_cubes[2], CubeCount::new(20, 13, 6));
+        assert_eq!(min_cubes[3], CubeCount::new(14, 3, 15));
+        assert_eq!(min_cubes[4], CubeCount::new(6, 3, 2));
     }
 
     #[test]
-    fn read_example() {
-        let contents = read_to_string("data/day02.txt").expect("file");
-        let lines = contents.lines();
-        assert_eq!(lines.count(), 100);
+    fn product() {
+        let product = CubeCount::new(4, 2, 6).product();
+        assert_eq!(product, 48);
     }
 
     #[test]
     fn total_example() {
         let lines = EXAMPLE.lines();
         let answer = total(lines).expect("answer");
-        assert_eq!(answer, 8);
+        assert_eq!(answer, 2286);
     }
 }
