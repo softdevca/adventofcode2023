@@ -9,7 +9,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-// Find a possible digit for each character. The words may overlap.
+/// Find a possible digit for each character. The words may overlap.
 fn line_to_digits(line: &str) -> Vec<u8> {
     let chars = line.chars().collect::<Vec<char>>();
     (0..chars.len())
@@ -31,8 +31,8 @@ fn line_to_digits(line: &str) -> Vec<u8> {
 
 fn total(lines: Lines) -> Result<u32, Box<dyn Error>> {
     let total = lines
-        .map(|line| line_to_digits(line))
-        .map(|mut digits| {
+        .map(line_to_digits)
+        .map(|digits| {
             let first = digits.first().expect("at least one digit");
             let last = digits.last().map_or(first, |n| n);
             (first * 10 + last) as u32
