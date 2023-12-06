@@ -64,7 +64,7 @@ fn parse(lines: Lines) -> Result<Almanac, Box<dyn Error>> {
             return Err(IoError::other(format!(
                 "Map name line '{map_id_line}' did not end with 'map:'"
             ))
-                .into());
+            .into());
         }
         let _map_id = map_id_line
             .split_whitespace()
